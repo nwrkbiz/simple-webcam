@@ -14,10 +14,12 @@
 #include <FL/Fl_Scroll.H>
 #include <FL/Fl_RGB_Image.H>
 #include <FL/Fl_Box.H>
+#include <FL/fl_ask.H>
 
 // std library
 #include <memory>
 #include <iostream>
+#include <string>
 #include <tuple>
 #include <chrono>
 
@@ -117,7 +119,7 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help", "Print help.")
-    ("device", po::value<size_t>(), "Camara id to be used. (defaults to 0)");
+    ("device", po::value<int>(), "Camara id to be used. (if not set a gui prompt will force you to set one)");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -129,9 +131,18 @@ int main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    size_t device = 0;
+    int device = -1;
     if(vm.count("device")){
-        device = vm["device"].as<size_t>();
+        device = vm["device"].as<int>();
+    }
+
+    std::shared_ptr<Fl_RGB_Image> icon = std::make_shared<Fl_RGB_Image>(icon_data, 500, 500, ImgShow::fl_imgtype::rgba, 0);
+    if(device == -1){
+        fl_message_hotspot(true); // popup msg box near mousepointer
+        ((Fl_Double_Window*)fl_message_icon()->parent())->icon(icon.get());
+        fl_message_title("Select camara to use");
+        std::string deviceIdStr = fl_input("Camara device ID", "0");
+        device = std::stoi(deviceIdStr);
     }
 
     cv::Mat frame = cv::Mat::zeros(5,5, CV_8U);
